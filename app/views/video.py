@@ -7,7 +7,8 @@ import streamlit as st
 from hospital_monitor import pipelines as pl
 from hospital_monitor.video.pose_metrics import PROFILES
 
-WATCHABLE = ["scissors", "knife", "cell phone", "bottle", "cup"]
+# "person" permite alertar presença de pessoa na área crítica (ex.: zona estéril ou leito isolado)
+WATCHABLE = ["scissors", "knife", "cell phone", "bottle", "cup", "person"]
 
 
 @st.cache_resource(show_spinner="Carregando modelos YOLOv8 (1ª vez baixa os pesos)...")
