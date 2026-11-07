@@ -27,6 +27,12 @@ def render(settings, center):
         return
 
     data = audio_file.getvalue()
+    # Trocou de áudio: descarta transcrição, confiança e palavras/min do arquivo anterior.
+    signature = (getattr(audio_file, "name", ""), len(data))
+    if st.session_state.get("audio_signature") != signature:
+        for key in ("transcript", "wpm", "stt_conf"):
+            st.session_state.pop(key, None)
+        st.session_state["audio_signature"] = signature
     st.audio(data)
     try:
         y, sr = load_audio(data)

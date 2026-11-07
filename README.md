@@ -19,7 +19,7 @@ precoces de risco em pacientes e alertar a equipe médica. Roda localmente, em D
 | **Alertas** | Tudo acima | Central única + webhook + relatório Markdown | Notificação da equipe |
 
 Detalhes: [arquitetura](docs/arquitetura.md) · [relatório técnico](docs/relatorio-tecnico.md) ·
-[deploy no Azure](docs/deploy-azure.md) · [roteiro do vídeo](docs/roteiro-video.md).
+[deploy no Azure](docs/deploy-azure.md) · [roteiro do vídeo](docs/roteiro-video.md) · [mapa de testes](docs/mapa-de-testes.md).
 
 ## Estrutura
 
