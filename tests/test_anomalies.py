@@ -61,3 +61,10 @@ def test_movement_detects_inactivity_and_fall():
 
 def test_movement_clean_has_no_events():
     assert detect_movement_anomalies(make_movement(inject=False)).empty
+
+
+def test_vitals_clean_series_with_isolation_forest_stays_quiet():
+    # O Isolation Forest sozinho marcaria ~2% dos pontos; a corroboração por z-score evita isso.
+    events = detect_vitals_anomalies(make_vitals(inject=False))
+    assert len(events) <= 5
+    assert not (events["severity"] == 3).any()

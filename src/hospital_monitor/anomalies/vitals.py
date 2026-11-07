@@ -100,7 +100,11 @@ def zscore_events(df: pd.DataFrame, signals: list[str], window: int, threshold: 
 
 
 def isolation_forest_events(
-    df: pd.DataFrame, signals: list[str], contamination: float
+    df: pd.DataFrame,
+    signals: list[str],
+    contamination: float,
+    z_window: int = 30,
+    z_min: float = 2.5,
 ) -> pd.DataFrame:
     if len(df) < 30 or not signals:
         return _empty()
@@ -113,6 +117,16 @@ def isolation_forest_events(
 
     model = IsolationForest(n_estimators=200, contamination=contamination, random_state=42)
     outlier = model.fit_predict(xs) == -1
+    if not outlier.any():
+        return _empty()
+
+    # O Isolation Forest sempre marca ~`contamination` dos pontos, mesmo em dados limpos.
+    # Para evitar alarmes em série normal, só vale o ponto que também se desvia do padrão
+    # recente (z-score robusto) em algum sinal.
+    zmax = pd.concat(
+        [rolling_robust_z(df[s].astype(float), z_window).abs() for s in signals], axis=1
+    ).max(axis=1)
+    outlier = outlier & (zmax.fillna(0) > z_min).to_numpy()
     if not outlier.any():
         return _empty()
 
@@ -157,7 +171,7 @@ def detect_vitals_anomalies(
         zscore_events(df, signals, window, z_threshold),
     ]
     if use_isolation_forest:
-        parts.append(isolation_forest_events(df, signals, contamination))
+        parts.append(isolation_forest_events(df, signals, contamination, z_window=window))
     parts = [p for p in parts if not p.empty]
     if not parts:
         return _empty()

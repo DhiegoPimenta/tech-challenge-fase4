@@ -75,10 +75,17 @@ def extract_voice_features(y: np.ndarray, sr: int, max_seconds: float = 180.0) -
     pause_lengths = [(b - a + 1) * HOP_S for a, b in pauses]
 
     voiced_frames = frames[~silent]
-    f0 = _estimate_f0(voiced_frames, sr)
+    f0_all = _estimate_f0(frames, silent, sr)  # NaN onde silêncio ou sem periodicidade
+    f0 = f0_all[~np.isnan(f0_all)]
     if len(f0) >= 3:
-        periods = 1.0 / f0
-        jitter = float(np.mean(np.abs(np.diff(periods))) / np.mean(periods) * 100)
+        # jitter aproximado: variação relativa do período entre frames VIZINHOS (mediana, robusta
+        # a erros de oitava). Não é o jitter ciclo a ciclo do Praat, só um indicador de estabilidade.
+        both = ~np.isnan(f0_all[:-1]) & ~np.isnan(f0_all[1:])
+        if both.sum() >= 3:
+            p1, p2 = 1.0 / f0_all[:-1][both], 1.0 / f0_all[1:][both]
+            jitter = float(np.median(np.abs(p1 - p2) / ((p1 + p2) / 2)) * 100)
+        else:
+            jitter = float("nan")
         f0_mean, f0_std = float(f0.mean()), float(f0.std())
     else:
         jitter, f0_mean, f0_std = float("nan"), float("nan"), float("nan")
@@ -99,21 +106,34 @@ def extract_voice_features(y: np.ndarray, sr: int, max_seconds: float = 180.0) -
     )
 
 
-def _estimate_f0(frames: np.ndarray, sr: int) -> np.ndarray:
-    """f0 por autocorrelação (via FFT) em frames de fala. Descarta frames sem periodicidade."""
-    if len(frames) == 0:
-        return np.array([])
+def _estimate_f0(frames: np.ndarray, silent: np.ndarray, sr: int) -> np.ndarray:
+    """f0 por autocorrelação (via FFT) com interpolação parabólica do pico.
+
+    Devolve um vetor com o tamanho de ``frames``: NaN nos frames silenciosos ou sem periodicidade.
+    """
+    out = np.full(len(frames), np.nan)
+    idx = np.where(~silent)[0]
+    if len(idx) == 0:
+        return out
     n = frames.shape[1]
-    x = frames.astype(np.float64)
+    x = frames[idx].astype(np.float64)
     x = (x - x.mean(axis=1, keepdims=True)) * np.hanning(n)
     spec = np.fft.rfft(x, n=2 * n, axis=1)
     ac = np.fft.irfft(np.abs(spec) ** 2, axis=1)[:, :n]
     ac = ac / (ac[:, [0]] + 1e-12)
-    lo, hi = int(sr / F0_MAX), min(int(sr / F0_MIN), n - 1)
+    lo, hi = int(sr / F0_MAX), min(int(sr / F0_MIN), n - 2)
     seg = ac[:, lo:hi]
-    lag = seg.argmax(axis=1) + lo
+    k = seg.argmax(axis=1)
     peak = seg.max(axis=1)
-    return sr / lag[peak > 0.3]
+    rows = np.arange(len(idx))
+    # interpolação parabólica em torno do pico (reduz o erro de quantização do lag inteiro)
+    y0, y1, y2 = ac[rows, k + lo - 1], ac[rows, k + lo], ac[rows, k + lo + 1]
+    denom = y0 - 2 * y1 + y2
+    delta = np.where(np.abs(denom) > 1e-12, 0.5 * (y0 - y2) / denom, 0.0)
+    lag = k + lo + np.clip(delta, -1, 1)
+    voiced = peak > 0.3
+    out[idx[voiced]] = sr / lag[voiced]
+    return out
 
 
 def assess_voice(

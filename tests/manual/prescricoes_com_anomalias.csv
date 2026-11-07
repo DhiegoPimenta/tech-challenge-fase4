@@ -1,0 +1,12 @@
+timestamp,drug,dose_mg,frequency_per_day
+2025-01-01 08:00,dipirona,500,4
+2025-01-02 08:00,dipirona,500,4
+2025-01-03 08:00,dipirona,1000,4
+2025-01-04 08:00,dipirona,1500,4
+2025-01-01 09:00,tramadol,50,2
+2025-01-03 09:00,tramadol,100,4
+2025-01-01 10:00,enalapril,10,1
+2025-01-02 10:00,enalapril,10,1
+2025-01-03 10:00,enalapril,10,1
+2025-01-02 11:00,varfarina,5,1
+2025-01-03 11:00,ibuprofeno,400,3

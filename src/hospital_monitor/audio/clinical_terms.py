@@ -28,7 +28,7 @@ CRITICAL_TERMS: dict[str, tuple[Severity, list[str]]] = {
     "Sangramento": (Severity.CRITICAL, ["sangramento", "sangrando", "sangue nas fezes", "vomito com sangue"]),
     "Sintomas gerais": (
         Severity.WARNING,
-        ["cansaco", "fadiga", "fraqueza", "febre", "calafrio", "vomito", "nausea", "dor de cabeca", "sem apetite"],
+        ["cansaco", "cansado", "cansada", "fadiga", "fraqueza", "fraco", "fraca", "febre", "calafrio", "vomito", "nausea", "dor de cabeca", "sem apetite"],
     ),
     "Dor": (Severity.WARNING, ["muita dor", "dor forte", "dor insuportavel", "dor intensa"]),
 }

@@ -1,0 +1,6 @@
+timestamp,drug,dose_mg,frequency_per_day
+2025-01-01 08:00,paracetamol,500,3
+2025-01-02 08:00,paracetamol,500,3
+2025-01-03 08:00,paracetamol,500,3
+2025-01-01 09:00,enalapril,10,1
+2025-01-02 09:00,enalapril,10,1

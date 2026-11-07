@@ -85,3 +85,13 @@ def test_analyze_text_local_fallback():
     out = analyze_text("Tenho dor no peito e tontura desde ontem")
     assert out.source == "local"
     assert any(t["severity"] == Severity.CRITICAL for t in out.critical_terms)
+
+
+def test_jitter_is_low_for_stable_tone():
+    f = extract_voice_features(_tone_pause_tone(), SR)
+    assert f.jitter_pct < 0.5
+
+
+def test_fatigue_words_are_flagged():
+    found = {t["term"] for t in find_critical_terms("Estou muito cansado e me sinto fraco")}
+    assert {"cansado", "fraco"} <= found
