@@ -1,8 +1,7 @@
 # Relatório técnico — Tech Challenge Fase 4
 
-> Seções 1–4 descrevem o que está implementado. A **seção 5 (resultados)** tem espaços marcados com
-> `PREENCHER`: preencha com as saídas reais após executar a aplicação, para que o relatório
-> reflita medições e não estimativas.
+> Seções 1–4 descrevem o que está implementado. A seção 5 traz os resultados medidos no app publicado no
+> Azure (roteiro e resultados completos em [mapa-de-testes.md](mapa-de-testes.md)).
 
 ## 1. Fluxo multimodal
 
@@ -68,43 +67,73 @@ Azure AI Speech e Azure AI Language, com chaves injetadas como *secrets*. Deploy
 
 ### Datasets
 
-* **Sinais vitais** — PhysioNet (https://physionet.org/): exporte para CSV `timestamp,hr,sbp,dbp,spo2`. Sugestão: bases de UTI como MIMIC-III Waveform / Demo ou *BIDMC PPG and Respiration*. `PREENCHER: qual base e quantos registros foram usados`.
-* **Áudio** — AudioSet (https://research.google.com/audioset/) para sons de tosse/respiração/fala, e gravações próprias de leitura de sintomas. `PREENCHER`.
-* **Vídeo** — clipes próprios de agachamento/caminhada com consentimento. `PREENCHER`.
-* **Demonstração/testes** — geradores em `synthetic.py` com anomalias injetadas em posições conhecidas (permitem verificar acerto de forma objetiva).
+* **Sinais vitais, prescrições e movimentação** — séries **sintéticas** geradas por `synthetic.py`, com anomalias injetadas em posições conhecidas. Isso permite conferir o acerto objetivamente. Foram usados 480 pontos de sinais vitais (1 por minuto), 2 dias de movimentação e 3 prescrições (arquivos em `tests/manual/`). Para dados reais, o app aceita CSV `timestamp,hr,sbp,dbp,spo2` exportado de bases como PhysioNet (https://physionet.org/); **não foram usados dados reais de pacientes neste trabalho**.
+* **Áudio** — três consultas simuladas, falando em português com a voz sintética do Windows (Microsoft Maria), e gravação pelo microfone no navegador: sintomas críticos (19,5 s), consulta normal (14,6 s) e fala lenta com pausas (64 s).
+* **Vídeo** — quatro clipes de teste: um sem pessoa (retângulo em movimento) e três derivados de uma foto real com pessoas (em pé, inclinada em 30° e "queda" girada em 90°). O YOLOv8 detecta as pessoas de verdade, mas o movimento é simulado. Não houve ainda clipe de agachamento ou marcha reais.
 
 ### 5.1 Séries temporais (dados sintéticos, anomalias conhecidas)
 
-Anomalias injetadas por `make_vitals()`: taquicardia sustentada (min 200–214), dessaturação
-(min 300–311), pico hipertensivo (min 380–385) e um pico isolado de FC (min 120).
-`make_prescriptions()`: dipirona 2×→dose acima do máximo, tramadol ×4, interação varfarina + ibuprofeno.
-`make_movement()`: 4 h de imobilidade (dia 1) e queda às 10:00 do dia 2.
+Anomalias injetadas em `make_vitals()`: pico isolado de FC (10:00), taquicardia sustentada (11:20–11:34),
+dessaturação (13:00–13:11) e pico hipertensivo (14:20–14:25). `make_prescriptions()`: dipirona com dose
+dobrada e acima do máximo, tramadol ×4, interação varfarina + ibuprofeno. `make_movement()`: 4 h de
+imobilidade (dia 1) e queda às 10:00 do dia 2.
 
-Os testes automatizados (`tests/test_anomalies.py`) verificam que cada uma é detectada e que as séries
-sem anomalia geram poucos alertas.
+Os testes automatizados (`tests/`) e a validação manual no app verificam que cada uma é detectada e que as
+séries sem anomalia geram poucos alertas.
 
 | Métrica | Valor |
 |---|---|
-| Episódios de sinais vitais detectados | 7 (4 correspondem às anomalias injetadas: pico isolado de FC, taquicardia, dessaturação, pico hipertensivo; 3 são falsos positivos de 1–2 pontos, em SpO₂, DBP e SBP) |
-| Alertas de prescrição | 5 (dipirona: dobra da dose e excesso do máximo; tramadol x4; interação varfarina + ibuprofeno) |
-| Eventos de movimentação | 2 (imobilidade diurna de 13:00 a 16:45; queda suspeita às 10:00 do dia 2) |
-| Eventos na série limpa (`make_vitals(inject=False)`, todos de severidade ALERTA) | 10 de 480 medições (2,1%) |
+| Episódios de sinais vitais com anomalias | 6, sendo 4 críticos exatamente nos horários injetados (FC 10:00, FC 11:20–11:34, SpO₂ 13:00–13:11, PA 14:20–14:25) e 2 leves |
+| Episódios na série limpa (`vitais_normais.csv`) | 2, ambos leves (SpO₂); nenhum crítico |
+| Alertas de prescrição | 5 (dipirona: dobra e excesso do máximo, e ×1,5; tramadol ×4; interação varfarina + ibuprofeno). A prescrição estável (enalapril) não alertou |
+| Eventos de movimentação | 2 (imobilidade diurna de 13:00 a 16:45, alerta; queda suspeita às 10:00 do dia 2, crítico). Série normal: 0 eventos |
+| Demonstração completa (botão da Visão geral) | 13 alertas: 6 de sinais vitais, 5 de prescrições e 2 de movimentação (8 críticos e 5 alertas) |
+
+A taxa de falsos positivos caiu depois de dois ajustes: piso do MAD no z-score robusto e confirmação do
+Isolation Forest por z-score local (>2,5). Antes disso a série limpa gerava 18 alertas.
 
 ### 5.2 Vídeo
 
-| Vídeo | Perfil | Eventos | Exemplo |
+| Vídeo | Perfil | Eventos | Resultado |
 |---|---|---|---|
-| `PREENCHER` | Agachamento | `PREENCHER` | `PREENCHER` (tempo, tipo, ângulo, captura anotada) |
+| `video_sem_pessoa.mp4` (8 s, 40 quadros) | Agachamento | 1 | "Paciente não detectado por 8,0 s" (alerta) |
+| `pessoa_em_pe.mp4` | Agachamento | 0 | Pessoas detectadas, ângulos plotados, sem desvio |
+| `pessoa_inclinada.mp4` | Marcha / caminhada | 1 | Tronco fora de [0°, 20°]: desvio de 13° (tronco a ~33° para uma foto girada em 30°) |
+| `queda_simulada.mp4` | qualquer | 2 (críticos) | Queda suspeita aos 3,0 s (razão largura/altura passa de <0,8 para >1,2 em até 1,5 s) e tronco 68° fora do limite |
+| `pessoa_em_pe.mp4` + área crítica (H 0,60–1,00; V 0,50–1,00) | Agachamento | 1 (crítico) | "Objeto 'person' dentro da área crítica", com esqueleto, caixas (confiança 0,83–0,87) e retângulo vermelho no quadro anotado |
+
+Limite: o movimento desses clipes é simulado. A validação com agachamento ou marcha reais ainda precisa de filmagem.
 
 ### 5.3 Áudio
 
+Valores medidos nos três arquivos de teste. Silêncio, pausas, f0 e jitter vêm do cálculo local em NumPy;
+confiança, sentimento e termos vêm do Azure Speech e do Azure AI Language no app publicado.
+
 | Áudio | Silêncio | Pausas/min | f0 / jitter | Palavras/min | Termos críticos | Sentimento (Azure) |
 |---|---|---|---|---|---|---|
-| `PREENCHER` | | | | | | |
+| `consulta_sintomas_criticos.wav` (19,5 s) | 10% | 6,1 | 189 Hz / 1,5% | n/d | 5: dor no peito, falta de ar, tontura, cansado, fraco | negativo (confiança da transcrição 86%) |
+| `consulta_normal.wav` (14,6 s) | 10% | 4,1 | 185 Hz / 1,6% | n/d | 0 | positivo/neutro (confiança 75%) |
+| `consulta_fala_lenta_pausas.wav` (64 s) | 81% (pausa mais longa 8,8 s) | 5,6 | 185 Hz / 1,0% | 9 | 1: cansado | negativo (confiança 84%) |
+
+Alertas gerados: 6, 0 e 4, respectivamente. A voz é sintética, então f0 e jitter não representam um
+paciente real. O microfone foi exercitado só com sinal simulado no navegador (f0 141 Hz para um tom de 140 Hz).
 
 ### 5.4 Exemplos de alertas gerados
 
-`PREENCHER`: cole a tabela da aba *Alertas e relatório* e o relatório `.md` baixado.
+A central da aba *Alertas* consolidou, na demonstração, 13 alertas de séries temporais (8 críticos, 5 alertas),
+e depois somou os de áudio e vídeo. Todos foram enviados ao webhook de teste em um único POST
+(`{"text": ..., "alerts": [...]}`), confirmado nos logs do receptor. Exemplos:
+
+| Fonte | Severidade | Descrição (resumida) |
+|---|---|---|
+| Sinais vitais | CRÍTICO | Dessaturação de SpO₂ entre 13:00 e 13:11 |
+| Prescrição | CRÍTICO | Dipirona acima da dose máxima diária |
+| Prescrição | ALERTA | Interação varfarina + ibuprofeno |
+| Movimentação | CRÍTICO | Queda suspeita no dia 2 às 10:00 |
+| Vídeo | CRÍTICO | Queda suspeita aos 3,0 s |
+| Áudio | ALERTA | Fala lenta (9 palavras/min) e pausa longa de 8,8 s |
+
+O relatório Markdown completo é gerado pelo botão *Baixar relatório* da aba Alertas.
 
 ## 6. Limitações e trabalhos futuros
 
