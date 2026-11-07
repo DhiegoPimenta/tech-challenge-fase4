@@ -37,9 +37,12 @@ def render(settings, center):
 
     patient = st.text_input("Identificação do paciente (fictícia na demonstração)", "PAC-0001")
     notes = st.text_area("Observações", "")
+    report = build_markdown_report(patient, center, notes)
+    with st.expander("Pré-visualizar relatório"):
+        st.markdown(report)
     st.download_button(
         "⬇️ Baixar relatório (Markdown)",
-        build_markdown_report(patient, center, notes),
+        report,
         file_name=f"relatorio_{patient or 'paciente'}.md",
         mime="text/markdown",
     )
