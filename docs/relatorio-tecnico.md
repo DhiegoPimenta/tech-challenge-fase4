@@ -67,7 +67,8 @@ Azure AI Speech e Azure AI Language, com chaves injetadas como *secrets*. Deploy
 
 ### Datasets
 
-* **Sinais vitais, prescrições e movimentação** — séries **sintéticas** geradas por `synthetic.py`, com anomalias injetadas em posições conhecidas. Isso permite conferir o acerto objetivamente. Foram usados 480 pontos de sinais vitais (1 por minuto), 2 dias de movimentação e 3 prescrições (arquivos em `tests/manual/`). Para dados reais, o app aceita CSV `timestamp,hr,sbp,dbp,spo2` exportado de bases como PhysioNet (https://physionet.org/); **não foram usados dados reais de pacientes neste trabalho**.
+* **Sinais vitais, prescrições e movimentação** — séries **sintéticas** geradas por `synthetic.py`, com anomalias injetadas em posições conhecidas. Isso permite conferir o acerto objetivamente. Foram usados 480 pontos de sinais vitais (1 por minuto), 2 dias de movimentação e 3 prescrições (arquivos em `tests/manual/`). O app aceita CSV `timestamp,hr,sbp,dbp,spo2`.
+* **Sinais vitais reais (PhysioNet)** — os 53 registros do *BIDMC PPG and Respiration Dataset* (https://physionet.org/content/bidmc/1.0.0/, acesso aberto, licença ODC-By): pacientes de UTI, dados anonimizados, 1 amostra/s por ~8 min, com FC e SpO₂. Usados na seção 5.5 (25.361 pontos). Os dados sintéticos continuam sendo a única base com anomalias *rotuladas*.
 * **Áudio** — três consultas simuladas, falando em português com a voz sintética do Windows (Microsoft Maria), e gravação pelo microfone no navegador: sintomas críticos (19,5 s), consulta normal (14,6 s) e fala lenta com pausas (64 s).
 * **Vídeo** — quatro clipes de teste: um sem pessoa (retângulo em movimento) e três derivados de uma foto real com pessoas (em pé, inclinada em 30° e "queda" girada em 90°). O YOLOv8 detecta as pessoas de verdade, mas o movimento é simulado. Não houve ainda clipe de agachamento ou marcha reais.
 
@@ -133,12 +134,66 @@ e depois somou os de áudio e vídeo. Todos foram enviados ao webhook de teste e
 | Vídeo | CRÍTICO | Queda suspeita aos 3,0 s |
 | Áudio | ALERTA | Fala lenta (9 palavras/min) e pausa longa de 8,8 s |
 
+Prova da entrega ao webhook (teste em 07/11/2026): ao clicar em *Enviar alertas* no app publicado, a tela mostrou
+"13 alerta(s) enviados" e o receptor de teste (outro Container App) registrou em seus logs, às 20:00:52 UTC, uma
+linha `WEBHOOK_RECEBIDO` com o JSON completo (13 alertas). Trecho do campo `text` recebido:
+
+```
+**13 alerta(s) clínico(s)**
+- [CRÍTICO] Movimentação - Possível queda: pico de movimento seguido de imobilidade (02/01 10:00 - 11:00)
+- [CRÍTICO] Prescrições - Prescrição de dipirona: aumento brusco da dose diária: 2000 mg -> 4000 mg (x2.00)
+- [CRÍTICO] Prescrições - Prescrição de tramadol: aumento brusco da dose diária: 100 mg -> 400 mg (x4.00)
+- [CRÍTICO] Prescrições - Prescrição de dipirona: dose diária de 6000 mg excede o máximo de referência (4000 mg)
+- [CRÍTICO] Sinais vitais - Frequência cardíaca (bpm) fora do limite crítico ... valor de pico 160.0 (01/01 10:00 - 10:00)
+- [CRÍTICO] Sinais vitais - Frequência cardíaca (bpm) fora do limite crítico ... valor de pico 139.2 (01/01 11:20 - 11:34)
+```
+
+Cada item de `alerts` traz `source`, `severity`, `title`, `message`, `when` e `details`.
+
 O relatório Markdown completo é gerado pelo botão *Baixar relatório* da aba Alertas.
+
+### 5.5 Sinais vitais reais (PhysioNet BIDMC)
+
+Roteiro reproduzível: `python scripts/eval_physionet.py <pasta com os bidmc_*_Numerics.csv>`. Os arquivos não têm
+rótulos de anomalia nem relógio, então o resultado mostra **o que o sistema marca em dados reais**, não
+precisão e revocação. O script usa FC e SpO₂ (não há pressão arterial), monta o `timestamp` a partir de
+2025-01-01 + segundos e agrupa pontos vizinhos com tolerância de 5 s (o padrão do app é 5 min, pensado para
+1 amostra/min).
+
+| Métrica (53 registros, 25.361 pontos) | Valor |
+|---|---|
+| Registros com episódio **crítico** | 4: SpO₂ de 83% (reg. 32), 84% (reg. 49) e 88% (reg. 22), e FC de até 139 bpm (reg. 25) |
+| Registros com SpO₂ < 90% ou FC > 130 bpm (limiares críticos) | os mesmos 4: nenhum caso crítico foi perdido e nenhum foi inventado |
+| Registros sem nenhum episódio | 1 |
+| Episódios por registro | média 10,2 (máximo 34) |
+| Pontos marcados | 9.222 (36,4%) |
+
+**Leitura honesta do resultado:**
+
+* Os críticos são clinicamente plausíveis, mas isso é em grande parte a regra de limiar clínico, não aprendizado.
+* A taxa de pontos marcados é **alta**: em dados reais o sistema gera muitos alertas leves. Do total de pontos
+  marcados, cerca de 5,9 mil vêm só da regra clínica (por exemplo, SpO₂ estável em 93% fica abaixo da referência
+  de 94% e é marcada em todos os segundos) e cerca de 2,8 mil só do z-score robusto.
+* O z-score dispara por **quantização**: FC e SpO₂ reais são inteiros e, em séries muito estáveis, o MAD é quase
+  zero; um passo de 1 bpm ou 1% vira "variação abrupta". Nas séries sintéticas (com ruído contínuo) isso não aparecia.
+* Correção candidata (medida, **não aplicada**, para manter o app publicado e o vídeo coerentes): exigir uma variação
+  mínima clínica em relação à mediana móvel (FC 8 bpm, PAS 15, PAD 10, SpO₂ 3 pontos) antes de contar o z-score.
+  Nos mesmos dados: pontos marcados caem de 36,4% para 24,9%, episódios por registro de 10,2 para 1,9 e registros
+  sem episódio de 1 para 22; os 4 críticos continuam. Nas séries sintéticas, os 4 críticos injetados continuam
+  detectados e os 2 episódios leves de falso positivo somem (6 para 4 episódios; série limpa de 2 para 0).
+
+O registro 32 (SpO₂ ~84% o tempo todo) está em `tests/manual/physionet_bidmc_32.csv` para subir na aba
+*Anomalias → Sinais vitais*: o app mostra 2 episódios, SpO₂ crítica (481 medições) e FC leve (45 medições, o
+efeito de quantização descrito acima).
+
+Fonte dos dados: Pimentel et al., *BIDMC PPG and Respiration Dataset* (PhysioNet), licença Open Data Commons
+Attribution v1.0. Goldberger et al., *PhysioBank, PhysioToolkit, and PhysioNet*, Circulation 2000.
 
 ## 6. Limitações e trabalhos futuros
 
 * Limiares clínicos/dose/interações ilustrativos — validar com especialistas e bases oficiais.
-* Sem avaliação quantitativa em dados rotulados reais (precisão/revocação); recomenda-se anotar um conjunto de validação.
+* Sem avaliação quantitativa em dados rotulados reais (precisão/revocação); recomenda-se anotar um conjunto de validação. Em dados reais do PhysioNet (seção 5.5) o sistema gera muitos alertas leves por quantização; a correção candidata está descrita lá.
+* **Tempo real:** a análise é feita sob demanda sobre arquivos enviados (vídeo, áudio e CSV); o envio do alerta ao webhook é automático após a análise, mas não há ingestão contínua. O fluxo em tempo real (RTSP, Event Hubs ou Azure Stream Analytics) é trabalho futuro.
 * Correlacionar modalidades por janela de tempo (fusão intermediária) e personalizar limiares por paciente.
 * Persistência de alertas (Cosmos DB / Table Storage), autenticação (Entra ID) e rede privada para uso real (LGPD).
 * Inferência em GPU ou endpoint dedicado para vídeos longos; streaming em tempo real (RTSP/Event Hubs).

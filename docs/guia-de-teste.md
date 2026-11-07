@@ -44,6 +44,7 @@ na tela Alertas.
 | `vitais_normais.csv` | No máximo 2 episódios leves, **nenhum crítico** |
 | `vitais_com_anomalias.csv` | **6 episódios, 4 críticos**: pico de FC às 10:00, taquicardia 11:20–11:34, queda de SpO₂ 13:00–13:11, pico de PA 14:20–14:25 (+ 2 leves) |
 | `invalido_sem_timestamp.csv` | Mensagem de erro amigável ("CSV inválido: faltam as colunas…"), sem traceback |
+| `physionet_bidmc_32.csv` (dado real do PhysioNet, só FC e SpO₂, 1 amostra/s) | **2 episódios**: SpO₂ crítica (481 medições, ~84%) e FC leve (45 medições, efeito de quantização descrito no relatório, seção 5.5) |
 
 Outras verificações:
 - Troque o sinal do gráfico (FC, PA, SpO₂): pontos **vermelhos** (críticos) e **laranja** (alertas) sobre a linha.

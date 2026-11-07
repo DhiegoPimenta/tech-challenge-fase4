@@ -13,7 +13,9 @@ precoces de risco em pacientes e alertar a equipe médica. Roda localmente, em D
 **Azure Container Apps**, com infraestrutura como código em **Bicep**.
 
 > Projeto acadêmico. Os alertas são heurísticas/modelos de apoio à decisão e **não substituem avaliação clínica**.
-> Todos os dados usados nas demonstrações são sintéticos ou públicos; não há dados reais de pacientes.
+> Os dados das demonstrações são sintéticos, com anomalias injetadas em posições conhecidas. Também foram usados
+> 53 registros públicos e anonimizados do PhysioNet (BIDMC) para ver o comportamento em dados reais
+> ([relatório técnico, seção 5.5](docs/relatorio-tecnico.md)). Não há dados identificáveis de pacientes.
 
 ## O que o sistema faz
 
