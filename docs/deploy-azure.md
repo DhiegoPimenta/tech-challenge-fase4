@@ -15,10 +15,10 @@ az provider register -n Microsoft.App -n Microsoft.ContainerRegistry -n Microsof
 ```powershell
 az login
 az account set --subscription "<id-ou-nome>"
-./infra/deploy.ps1 -ResourceGroup rg-hospital-monitor -Location brazilsouth -Environment dev
+./infra/deploy.ps1 -ResourceGroup rg-hospital-monitor -Location eastus2 -Environment dev
 ```
 
-Linux/macOS: `./infra/deploy.sh rg-hospital-monitor brazilsouth dev`.
+Linux/macOS: `./infra/deploy.sh rg-hospital-monitor eastus2 dev`. Em assinaturas Azure for Students, uma política limita as regiões (ex.: `eastus2`, `eastus`, `southcentralus`); `brazilsouth` é recusada.
 
 O script executa:
 
