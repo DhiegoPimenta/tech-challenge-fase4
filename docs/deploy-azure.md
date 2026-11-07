@@ -56,24 +56,26 @@ az bicep build --file infra/main.bicep          # compila/valida
 az deployment group what-if -g rg-hospital-monitor -f infra/main.bicep
 ```
 
+## Assinaturas de teste gratuito / estudante: build via GitHub Actions
+
+`az acr build` (ACR Tasks) é **bloqueado** nessas assinaturas (`TasksOperationsNotAllowed`). O caminho usado neste projeto:
+
+1. Fase 1 da infra com `infra/deploy.ps1` (ele falha no `az acr build`, mas a infra já ficou criada). Use `-SpeechSku F0 -LanguageSku F0 -MinReplicas 0` para gastar o mínimo de crédito.
+2. Uma vez, crie a identidade do GitHub (OIDC, sem senha) com **escopo mínimo**:
+
+```powershell
+./infra/setup-github-oidc.ps1 -Repo <owner>/<repo>
+```
+
+   Ela cria o app registration, dá `Contributor` só no resource group e `AcrPush` só no registry, e cadastra `AZURE_CLIENT_ID`, `AZURE_TENANT_ID` e `AZURE_SUBSCRIPTION_ID` como secrets (são IDs, não senhas).
+3. Dispare o deploy: `gh workflow run deploy.yml --repo <owner>/<repo>`. O workflow builda a imagem no runner do GitHub, envia ao ACR e atualiza o Container App; a URL aparece no resumo do run.
+
+**Pegadinha do OIDC:** o GitHub pode emitir o *subject* com IDs numéricos (`repo:<owner>@<id>/<repo>@<id>:ref:refs/heads/main`). Se o login falhar com `AADSTS700213`, copie o subject exato da mensagem do `azure/login` e crie uma segunda credencial federada com ele (`az ad app federated-credential create`).
+
 ## CI/CD (GitHub Actions)
 
 * `ci.yml`: lint + testes + `az bicep build` + build da imagem Docker, em push e PR.
-* `deploy.yml`: *manual* (`workflow_dispatch`), login por **OIDC** (sem senha guardada) e chama `infra/deploy.sh`.
-
-Configuração única do OIDC:
-
-```bash
-az ad app create --display-name gh-hospital-monitor          # anote appId
-az ad sp create --id <appId>
-az role assignment create --assignee <appId> --role Owner --scope /subscriptions/<sub>/resourceGroups/rg-hospital-monitor
-az ad app federated-credential create --id <appId> --parameters '{
-  "name":"github-main","issuer":"https://token.actions.githubusercontent.com",
-  "subject":"repo:<owner>/<repo>:ref:refs/heads/main","audiences":["api://AzureADTokenExchange"]}'
-```
-
-Depois cadastre os *secrets* `AZURE_CLIENT_ID`, `AZURE_TENANT_ID`, `AZURE_SUBSCRIPTION_ID` no repositório.
-(`Owner` no RG é necessário pela role assignment do `AcrPull`; restrinja ao mínimo que sua política permitir.)
+* `deploy.yml`: *manual* (`workflow_dispatch`), login por **OIDC** e publica a imagem (descrito acima).
 
 ## Operação
 
@@ -102,6 +104,9 @@ az group delete --name rg-hospital-monitor --yes --no-wait
 |---|---|
 | `InvalidTemplateDeployment ... customSubDomainName` | nome já usado globalmente; mude `namePrefix` |
 | Fase 1 funciona, app mostra "Hello World" | fase 2 não rodou; rode o script de novo |
+| `TasksOperationsNotAllowed` no `az acr build` | assinatura de teste/estudante; use o workflow do GitHub (seção acima) |
+| `AADSTS700213` no `azure/login` | *subject* da credencial federada diferente do emitido pelo GitHub (ver pegadinha acima) |
+| `ImportError: libxcb.so.1` no build | faltam `libxcb1`/`libgl1` na imagem (já no Dockerfile) |
 | `ImagePullBackOff` / unauthorized | role `AcrPull` ainda propagando; aguarde 1–2 min e reinicie a revisão |
 | Cota de F0 excedida | já existe um recurso F0 na assinatura; use S0/S |
 | Transcrição retorna vazio | áudio sem fala ou idioma errado (`AZURE_SPEECH_LANGUAGE`) |
