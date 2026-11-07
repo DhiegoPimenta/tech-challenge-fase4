@@ -11,10 +11,13 @@ param(
   [string]$Environment = "dev",
   [string]$ImageTag = (Get-Date -Format "yyyyMMddHHmmss"),
   [ValidateSet("F0", "S0")][string]$SpeechSku = "S0",
-  [ValidateSet("F0", "S")][string]$LanguageSku = "S"
+  [ValidateSet("F0", "S")][string]$LanguageSku = "S",
+  [int]$MinReplicas = 1   # 0 = escala a zero (economiza crédito; 1º acesso demora)
 )
 
-$ErrorActionPreference = "Stop"
+# "Continue": no Windows PowerShell 5.1, avisos que o az escreve no stderr (ex.: "Packing source code")
+# viram erro fatal com "Stop". A falha real é detectada por Assert-Ok (código de saída do az).
+$ErrorActionPreference = "Continue"
 $Root = Split-Path -Parent $PSScriptRoot
 $Bicep = Join-Path $PSScriptRoot "main.bicep"
 
@@ -28,7 +31,7 @@ Assert-Ok "criar resource group"
 Write-Host "==> Fase 1: infraestrutura (imagem placeholder)"
 $out = az deployment group create `
   --resource-group $ResourceGroup --template-file $Bicep `
-  --parameters environmentName=$Environment speechSku=$SpeechSku languageSku=$LanguageSku `
+  --parameters environmentName=$Environment speechSku=$SpeechSku languageSku=$LanguageSku minReplicas=$MinReplicas `
   --query properties.outputs --output json | ConvertFrom-Json
 Assert-Ok "deploy da infraestrutura (fase 1)"
 $acr = $out.acrName.value
@@ -40,7 +43,7 @@ Assert-Ok "az acr build"
 Write-Host "==> Fase 2: apontando o Container App para hospital-monitor:$ImageTag"
 $out = az deployment group create `
   --resource-group $ResourceGroup --template-file $Bicep `
-  --parameters environmentName=$Environment speechSku=$SpeechSku languageSku=$LanguageSku containerImage="hospital-monitor:$ImageTag" `
+  --parameters environmentName=$Environment speechSku=$SpeechSku languageSku=$LanguageSku minReplicas=$MinReplicas containerImage="hospital-monitor:$ImageTag" `
   --query properties.outputs --output json | ConvertFrom-Json
 Assert-Ok "deploy do app (fase 2)"
 
