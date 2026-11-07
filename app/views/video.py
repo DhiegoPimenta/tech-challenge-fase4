@@ -79,7 +79,7 @@ def render(settings, center):
         fig.add_vrect(x0=e.t_start, x1=max(e.t_end, e.t_start + 0.2), fillcolor="#C50F1F" if int(e.severity) == 3 else "#F7630C",
                       opacity=0.2, line_width=0)
     fig.update_layout(height=360, margin={"l": 0, "r": 0, "t": 20, "b": 0}, xaxis_title="tempo (s)", yaxis_title="graus")
-    st.plotly_chart(fig, use_container_width=True)
+    st.plotly_chart(fig, width="stretch")
 
     st.subheader("Eventos detectados")
     if not result.events:
@@ -88,7 +88,7 @@ def render(settings, center):
         with st.expander(f"[{e.severity.label}] {e.t_start:.1f}s - {e.kind.replace('_', ' ')}: {e.message}"):
             snap = result.nearest_snapshot(e.t_start)
             if snap:
-                st.image(snap[1][:, :, ::-1], caption=f"Quadro anotado em {snap[0]:.1f}s", use_container_width=True)
+                st.image(snap[1][:, :, ::-1], caption=f"Quadro anotado em {snap[0]:.1f}s", width="stretch")
 
     if result.object_frames:
         st.subheader("Objetos detectados (nº de quadros em que apareceram)")

@@ -38,20 +38,20 @@ def _vitals_tab(center):
                                  name={3: "crítico", 2: "alerta"}.get(int(sev), "info"),
                                  marker={"color": SEV_COLOR[int(sev)], "size": 8}))
     fig.update_layout(height=380, margin={"l": 0, "r": 0, "t": 20, "b": 0})
-    st.plotly_chart(fig, use_container_width=True)
+    st.plotly_chart(fig, width="stretch")
     st.metric("Episódios anômalos", len(episodes))
-    st.dataframe(episodes, use_container_width=True, hide_index=True)
+    st.dataframe(episodes, width="stretch", hide_index=True)
 
 
 def _rx_tab(center):
     df = _load("prescrições", make_prescriptions, "timestamp, drug, dose_mg, frequency_per_day", "rx")
     if df is None:
         return
-    st.dataframe(df, use_container_width=True, hide_index=True)
+    st.dataframe(df, width="stretch", hide_index=True)
     events, alerts = pl.analyze_prescriptions(df)
     center.replace_source(pl.SRC_RX, alerts)
     st.subheader(f"{len(events)} anomalia(s) na prescrição")
-    st.dataframe(events, use_container_width=True, hide_index=True)
+    st.dataframe(events, width="stretch", hide_index=True)
 
 
 def _move_tab(center):
@@ -68,8 +68,8 @@ def _move_tab(center):
     for _, e in events.iterrows():
         fig.add_vrect(x0=e["start"], x1=e["end"], fillcolor=SEV_COLOR[int(e["severity"])], opacity=0.25, line_width=0)
     fig.update_layout(height=340, margin={"l": 0, "r": 0, "t": 20, "b": 0}, yaxis_title="atividade")
-    st.plotly_chart(fig, use_container_width=True)
-    st.dataframe(events, use_container_width=True, hide_index=True)
+    st.plotly_chart(fig, width="stretch")
+    st.dataframe(events, width="stretch", hide_index=True)
 
 
 def render(settings, center):

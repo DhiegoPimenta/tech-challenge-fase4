@@ -1,5 +1,5 @@
 # torch/torchvision (CPU) são instalados à parte no Dockerfile; localmente: pip install torch torchvision
-streamlit>=1.40,<2
+streamlit>=1.50,<2
 pandas>=2.1
 numpy>=1.26,<2.3
 scipy>=1.11

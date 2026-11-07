@@ -68,7 +68,10 @@ def rolling_robust_z(series: pd.Series, window: int) -> pd.Series:
     minp = max(5, window // 3)
     med = series.rolling(window, min_periods=minp).median()
     mad = (series - med).abs().rolling(window, min_periods=minp).median()
-    floor = max(float(series.std(ddof=0)) * 0.1, 1e-6)
+    # O MAD de uma janela curta é instável (subestima o ruído e gera falsos positivos).
+    # Usa-se como piso metade do MAD global da série.
+    global_mad = float((series - series.median()).abs().median())
+    floor = max(0.5 * global_mad, float(series.std(ddof=0)) * 0.1, 1e-6)
     mad = mad.where(mad > floor, floor)
     return 0.6745 * (series - med) / mad
 

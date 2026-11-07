@@ -93,7 +93,7 @@ def render(settings, center):
         if insights.key_phrases:
             st.write("**Frases-chave:** " + ", ".join(insights.key_phrases[:15]))
         if insights.entities:
-            st.dataframe(insights.entities, use_container_width=True, hide_index=True)
+            st.dataframe(insights.entities, width="stretch", hide_index=True)
         if insights.critical_terms:
             st.error("Termos críticos: " + ", ".join(f"{t['term']} ({t['category']})" for t in insights.critical_terms))
 

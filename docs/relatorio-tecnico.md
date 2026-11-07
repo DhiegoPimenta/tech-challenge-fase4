@@ -85,10 +85,10 @@ sem anomalia geram poucos alertas.
 
 | Métrica | Valor |
 |---|---|
-| Episódios de sinais vitais detectados | `PREENCHER` |
-| Alertas de prescrição | `PREENCHER` |
-| Eventos de movimentação | `PREENCHER` |
-| Falsos positivos na série limpa (`make_vitals(inject=False)`) | `PREENCHER` |
+| Episódios de sinais vitais detectados | 7 (4 correspondem às anomalias injetadas: pico isolado de FC, taquicardia, dessaturação, pico hipertensivo; 3 são falsos positivos de 1–2 pontos, em SpO₂, DBP e SBP) |
+| Alertas de prescrição | 5 (dipirona: dobra da dose e excesso do máximo; tramadol x4; interação varfarina + ibuprofeno) |
+| Eventos de movimentação | 2 (imobilidade diurna de 13:00 a 16:45; queda suspeita às 10:00 do dia 2) |
+| Eventos na série limpa (`make_vitals(inject=False)`, todos de severidade ALERTA) | 10 de 480 medições (2,1%) |
 
 ### 5.2 Vídeo
 

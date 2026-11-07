@@ -21,7 +21,7 @@ def render(settings, center):
     df = center.to_dataframe()
     order = {"CRÍTICO": 3, "ALERTA": 2, "INFO": 1}
     df = df[df["severity"].map(order) >= int(min_sev)]
-    st.dataframe(df, use_container_width=True, hide_index=True)
+    st.dataframe(df, width="stretch", hide_index=True)
 
     st.divider()
     st.subheader("Notificar a equipe médica")
