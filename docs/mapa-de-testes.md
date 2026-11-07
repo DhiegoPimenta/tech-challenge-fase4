@@ -26,9 +26,14 @@ powershell -ExecutionPolicy Bypass -File scripts/make_test_audio.ps1 # áudios (
 | `consulta_normal.wav` | áudio, 14,6 s | Consulta tranquila, sem queixas |
 | `consulta_fala_lenta_pausas.wav` | áudio, 64 s | Fala muito lenta com pausas de ~3,5 s |
 | `video_sem_pessoa.mp4` | vídeo, 8 s | Retângulo em movimento, **sem pessoa** (testa o caminho "fora de quadro") |
+| `pessoa_em_pe.mp4` | vídeo, 6 s *(gerado, não versionado)* | Pessoas reais em pé, de corpo inteiro, paradas |
+| `pessoa_inclinada.mp4` | vídeo, 6 s *(gerado)* | Mesma cena girada 30° (tronco inclinado) |
+| `queda_simulada.mp4` | vídeo, 6 s *(gerado)* | 3 s em pé + 3 s com a cena girada 90° (pessoa "deitada") |
 
-> **Falta um arquivo seu:** para exercitar postura/queda é preciso um vídeo de **pessoa real** (10–30 s,
-> corpo inteiro, câmera parada). Veja o caso V-3.
+Os três vídeos com pessoa saem de uma **foto real** do pacote `ultralytics` (`scripts/make_test_video.py`):
+o YOLOv8 detecta as pessoas de verdade, mas o "movimento" é simulado (foto girada). Não são versionados porque a
+foto vem de repositório AGPL; gere com `python scripts/make_test_video.py`. Para validar **movimento real**
+(agachamento de verdade), ainda vale gravar um clipe seu (caso V-7).
 
 ## Passo a passo
 
@@ -78,18 +83,19 @@ Na aba **Áudio**: enviar o arquivo → *Transcrever com Azure Speech* → ler o
 | U-3 | `consulta_fala_lenta_pausas.wav` | Silêncio **81%**, pausa longa **8,8 s**, "Fala lenta (9 palavras/min)", termo "cansado", sentimento negativo; 4 alertas | Todos os itens acima; confiança 84%; 4 alertas |
 | U-4 | Trocar de áudio após U-1 | Confiança e palavras/min **do novo arquivo** (não os do anterior) | Defeito encontrado (valores antigos persistiam) → corrigido e reverificado: ao trocar o arquivo, confiança e palavras/min somem |
 | U-5 | Sem transcrever, clicar **Usar texto de exemplo** | Análise de texto roda sobre o exemplo; termos críticos listados | OK (fonte azure; 5 termos críticos; 6 alertas) |
-| U-6 | *...ou grave agora* (microfone) | Grava e analisa como os demais | — (exige microfone/permissão do navegador) |
+| U-6 | *...ou grave agora* (microfone) | Grava e analisa como os demais | Parcial: **microfone simulado** (fala sintética injetada no `getUserMedia`): gravou 6,0 s; f0 141 Hz (sinal de 140 Hz), 40 pausas/min, voz monótona, 2 alertas. O microfone físico e a permissão do navegador não foram exercitados |
 
 ### 5. Vídeo (YOLOv8)
 
-| ID | Passo | Esperado | Observado |
+| ID | Arquivo / ajuste | Esperado | Observado |
 |---|---|---|---|
-| V-1 | `video_sem_pessoa.mp4`, perfil *Agachamento*, stride 3 | 8,0 s, 40 quadros, **1 evento** "Paciente não detectado por 8,0 s" (alerta) | OK |
+| V-1 | `video_sem_pessoa.mp4`, perfil *Agachamento* | 8,0 s, 40 quadros, **1 evento** "Paciente não detectado por 8,0 s" (alerta) | OK |
 | V-2 | Conferir a central (aba Alertas) | Alerta "Fora de quadro" de origem *Vídeo* | OK |
-| V-3 | **Seu vídeo** de agachamento/caminhada, perfil correspondente | Gráfico de ângulos de joelho/tronco; eventos de limite, assimetria ou movimento brusco quando houver; quadro anotado com esqueleto dentro de cada evento | — (precisa de vídeo real) |
-| V-4 | Vídeo com pessoa **caindo/deitando** | Evento crítico "Queda suspeita" | — |
-| V-5 | *Área crítica (ROI)* ligada, com objeto "scissors"/"knife" dentro | Evento crítico "Objeto 'scissors' dentro da área crítica" | — |
-| V-6 | Mudar o perfil (Marcha, Livre) no mesmo vídeo | Eventos de assimetria só no perfil Agachamento | — |
+| V-3 | `pessoa_em_pe.mp4`, perfil *Agachamento* | Pessoas detectadas (`person`, `bus` no gráfico de objetos), ângulos plotados, **0 eventos** | OK (20 quadros; 0 eventos) |
+| V-4 | `pessoa_inclinada.mp4`, perfil **Marcha / caminhada** | Evento de limite: `trunk_tilt` fora de [0°, 20°] | OK (alerta; desvio de 13° ≈ tronco a 33° para uma foto girada em 30°) |
+| V-5 | `queda_simulada.mp4` | Aos 3,0 s: evento **crítico** "Queda suspeita" (+ tronco fora do limite) | OK (2 eventos críticos aos 3,0 s; tronco a 68° de desvio) |
+| V-6 | `pessoa_em_pe.mp4` + *Definir área crítica* (H 0,60–1,00; V 0,50–1,00) + objetos `person` | Evento crítico "Objeto 'person' dentro da área crítica"; quadro anotado com esqueleto, caixas e o retângulo vermelho da área | OK (1 evento crítico; quadro com 3 pessoas, confiança 0,83–0,87) |
+| V-7 | **Seu clipe** de agachamento real (10–30 s, corpo inteiro, câmera parada), perfil *Agachamento* | Ângulos de joelho variando; eventos de limite/assimetria/velocidade se houver desvio | — (precisa de filmagem real) |
 
 ### 6. Alertas e relatório
 
@@ -99,7 +105,7 @@ Na aba **Áudio**: enviar o arquivo → *Transcrever com Azure Speech* → ler o
 | L-2 | Filtro "Mostrar a partir de" = CRÍTICO | Só os críticos | OK (8 linhas) |
 | L-3 | Preencher paciente e observações → **Baixar relatório (Markdown)** | Relatório com resumo e tabelas por fonte (visto na **Pré-visualização** da tela, que usa o mesmo texto do download; o clique em *Baixar* não foi exercitado para não gravar arquivo na máquina) | OK (pré-visualização) |
 | L-4 | **Limpar alertas** | Contadores zeram e aparece "Nenhum alerta ainda" | OK |
-| L-5 | Configurar `ALERT_WEBHOOK_URL` (ex.: um endereço de teste de webhook) e clicar **Enviar alertas** | "N alerta(s) enviados" e a mensagem chega ao destino | Parcial: código testado contra receptor HTTP local (`tests/test_webhook.py`: envia só ALERTA+, ordena, erro HTTP). Botão no app publicado depende de um webhook externo |
+| L-5 | `ALERT_WEBHOOK_URL` configurado + **Enviar alertas** | "N alerta(s) enviados" e a mensagem chega ao destino | OK: receptor de teste no próprio Azure (`infra/test/webhook-sink.bicep`) registrou o POST com os **13 alertas** e o payload completo; a interface mostrou "13 alerta(s) enviados" |
 
 ### 7. Infraestrutura
 
@@ -120,3 +126,27 @@ ruff check src app tests scripts
 
 Cobrem detecção de séries, prescrições, movimento, geometria de pose, queda, características vocais,
 termos críticos, alertas, relatório e a **consistência das chamadas das telas** (`tests/test_view_calls.py`).
+
+## Como repetir o teste do webhook (sem serviço de terceiros)
+
+O receptor de teste é um Container App mínimo, na mesma assinatura, que imprime nos logs o que receber.
+O endpoint é **público e anônimo**: use só durante o teste e apague depois.
+
+```bash
+# 1) criar o receptor e pegar a URL
+az deployment group create -g rg-hospital-monitor -f infra/test/webhook-sink.bicep --query properties.outputs.sinkUrl.value -o tsv
+
+# 2) apontar o app para ele (secret + variável de ambiente)
+az containerapp secret set -g rg-hospital-monitor -n ca-hospmon-dev --secrets "alert-webhook-url=<URL>/hook"
+az containerapp update   -g rg-hospital-monitor -n ca-hospmon-dev --set-env-vars "ALERT_WEBHOOK_URL=secretref:alert-webhook-url"
+
+# 3) no app: Visão geral -> Rodar demonstração -> Alertas -> Enviar alertas ao webhook
+# 4) conferir o que chegou
+az containerapp logs show -g rg-hospital-monitor -n ca-webhook-sink --type console --tail 20 --format text
+
+# 5) limpeza
+az containerapp delete -g rg-hospital-monitor -n ca-webhook-sink --yes
+az containerapp update -g rg-hospital-monitor -n ca-hospmon-dev --remove-env-vars ALERT_WEBHOOK_URL
+```
+
+Em produção, troque o receptor por um webhook de entrada do Teams/Slack ou um Logic App.
