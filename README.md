@@ -19,7 +19,7 @@ precoces de risco em pacientes e alertar a equipe médica. Roda localmente, em D
 | **Alertas** | Tudo acima | Central única + webhook + relatório Markdown | Notificação da equipe |
 
 Detalhes: [arquitetura](docs/arquitetura.md) · [relatório técnico](docs/relatorio-tecnico.md) ·
-[deploy no Azure](docs/deploy-azure.md) · [roteiro do vídeo](docs/roteiro-video.md) · [mapa de testes](docs/mapa-de-testes.md).
+[deploy no Azure](docs/deploy-azure.md) · [mapa de testes](docs/mapa-de-testes.md).
 
 ## Estrutura
 
@@ -105,7 +105,7 @@ No Azure, as chaves são injetadas como *secrets* do Container App pelo Bicep (n
 | Anomalias em vitais, prescrições e movimentação | `anomalies/`, aba **Anomalias** |
 | Alertas automáticos à equipe | `alerts.py`, aba **Alertas** (webhook) |
 | Integração com serviços Azure | `infra/main.bicep`, `audio/speech.py`, `audio/text_analytics.py` |
-| Relatório técnico e vídeo | `docs/relatorio-tecnico.md`, `docs/roteiro-video.md` |
+| Relatório técnico | `docs/relatorio-tecnico.md` |
 
 ## Limitações conhecidas
 

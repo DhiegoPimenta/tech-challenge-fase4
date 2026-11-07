@@ -18,3 +18,6 @@ infra/.deploy-outputs.json
 # vídeos de teste derivados de foto do ultralytics (AGPL): gere com scripts/make_test_video.py
 tests/manual/pessoa_*.mp4
 tests/manual/queda_*.mp4
+
+# roteiros do vídeo: só locais
+docs/roteiro-video*.md
