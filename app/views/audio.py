@@ -76,7 +76,7 @@ def render(settings, center):
     if wpm is None and transcript.strip():
         speech_s = max(feat.duration_s * (1 - feat.silence_ratio), 1e-6)
         wpm = len(transcript.split()) / (speech_s / 60.0)
-    findings = assess_voice(feat, words_per_minute=wpm)
+    findings = assess_voice(feat, words_per_min=wpm)
 
     st.subheader("3. Análise de texto (Azure AI Language + termos críticos)")
     insights = None

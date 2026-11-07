@@ -15,7 +15,29 @@ def _load(kind: str, demo_fn, columns: str, key: str) -> pd.DataFrame | None:
         return demo_fn()
     st.caption(f"Colunas esperadas: `{columns}`")
     up = st.file_uploader(f"CSV de {kind}", type="csv", key=f"up_{key}")
-    return pd.read_csv(up, parse_dates=["timestamp"]) if up else None
+    if not up:
+        return None
+    try:
+        df = pd.read_csv(up)
+    except Exception as exc:  # noqa: BLE001
+        st.error(f"Não foi possível ler o CSV: {exc}")
+        return None
+    expected = [c.strip() for c in columns.split(",")]
+    missing = [c for c in expected if c not in df.columns]
+    # nos sinais vitais basta 'timestamp' + pelo menos um sinal conhecido
+    if key == "vitals":
+        missing = [c for c in ["timestamp"] if c not in df.columns]
+        if not missing and not (set(VITAL_LIMITS) & set(df.columns)):
+            missing = sorted(VITAL_LIMITS)
+    if missing:
+        st.error(f"CSV inválido: faltam as colunas {missing}. Colunas esperadas: {expected}.")
+        return None
+    try:
+        df["timestamp"] = pd.to_datetime(df["timestamp"])
+    except Exception as exc:  # noqa: BLE001
+        st.error(f"A coluna 'timestamp' não tem datas válidas: {exc}")
+        return None
+    return df
 
 
 def _vitals_tab(center):
