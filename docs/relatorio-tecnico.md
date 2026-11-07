@@ -135,11 +135,11 @@ e depois somou os de áudio e vídeo. Todos foram enviados ao webhook de teste e
 | Áudio | ALERTA | Fala lenta (9 palavras/min) e pausa longa de 8,8 s |
 
 Prova da entrega ao webhook (teste em 07/11/2026): ao clicar em *Enviar alertas* no app publicado, a tela mostrou
-"13 alerta(s) enviados" e o receptor de teste (outro Container App) registrou em seus logs, às 20:00:52 UTC, uma
-linha `WEBHOOK_RECEBIDO` com o JSON completo (13 alertas). Trecho do campo `text` recebido:
+"11 alerta(s) enviados" e o receptor de teste (outro Container App) registrou em seus logs, às 22:13:31 UTC, uma
+linha `WEBHOOK_RECEBIDO` com o JSON completo (11 alertas). Trecho do campo `text` recebido:
 
 ```
-**13 alerta(s) clínico(s)**
+**11 alerta(s) clínico(s)**
 - [CRÍTICO] Movimentação - Possível queda: pico de movimento seguido de imobilidade (02/01 10:00 - 11:00)
 - [CRÍTICO] Prescrições - Prescrição de dipirona: aumento brusco da dose diária: 2000 mg -> 4000 mg (x2.00)
 - [CRÍTICO] Prescrições - Prescrição de tramadol: aumento brusco da dose diária: 100 mg -> 400 mg (x4.00)
