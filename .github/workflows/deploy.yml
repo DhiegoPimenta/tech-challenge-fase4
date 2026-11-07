@@ -1,22 +1,17 @@
 name: Deploy Azure
 
-# Manual. Builda a imagem Docker nos runners do GitHub (não depende do ACR Tasks, que não
-# existe em assinaturas de teste gratuito/estudante), envia ao ACR e atualiza o Container App.
+# Manual. Builda a imagem Docker nos runners do GitHub (não depende do ACR Tasks, que não existe
+# em assinaturas de teste gratuito/estudante), envia ao ACR e atualiza o Container App.
 #
-# Pré-requisito: a infra já existir (fase 1 do infra/deploy.ps1, ou rodar este workflow uma vez,
-# pois ele também aplica o Bicep).
+# A infra (Bicep) é criada uma vez com `infra/deploy.ps1`/`deploy.sh` (fase 1). Este workflow só
+# publica a imagem, então a identidade do GitHub precisa apenas de Contributor no resource group
+# + AcrPush no registry (ver infra/setup-github-oidc.ps1) - nada de Owner.
 #
 # Login por OIDC (sem senha guardada). Secrets do repositório:
 #   AZURE_CLIENT_ID, AZURE_TENANT_ID, AZURE_SUBSCRIPTION_ID
-# Variáveis do repositório (opcionais, com padrão):
-#   AZURE_RESOURCE_GROUP (rg-hospital-monitor), AZURE_LOCATION (eastus2),
-#   SPEECH_SKU (F0), LANGUAGE_SKU (F0), MIN_REPLICAS (0)
+# Variável opcional: AZURE_RESOURCE_GROUP (padrão rg-hospital-monitor)
 on:
   workflow_dispatch:
-    inputs:
-      environment:
-        description: Nome do ambiente
-        default: dev
 
 permissions:
   id-token: write
@@ -27,11 +22,6 @@ jobs:
     runs-on: ubuntu-latest
     env:
       RG: ${{ vars.AZURE_RESOURCE_GROUP || 'rg-hospital-monitor' }}
-      LOCATION: ${{ vars.AZURE_LOCATION || 'eastus2' }}
-      ENVIRONMENT: ${{ inputs.environment }}
-      SPEECH_SKU: ${{ vars.SPEECH_SKU || 'F0' }}
-      LANGUAGE_SKU: ${{ vars.LANGUAGE_SKU || 'F0' }}
-      MIN_REPLICAS: ${{ vars.MIN_REPLICAS || '0' }}
     steps:
       - uses: actions/checkout@v4
 
@@ -41,13 +31,10 @@ jobs:
           tenant-id: ${{ secrets.AZURE_TENANT_ID }}
           subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
 
-      - name: Infra (fase 1, idempotente)
+      - name: Descobrir recursos
         run: |
-          az group create --name "$RG" --location "$LOCATION" --output none
-          ACR=$(az deployment group create --resource-group "$RG" --template-file infra/main.bicep \
-            --parameters environmentName="$ENVIRONMENT" speechSku="$SPEECH_SKU" languageSku="$LANGUAGE_SKU" minReplicas="$MIN_REPLICAS" \
-            --query properties.outputs.acrName.value --output tsv)
-          echo "ACR=$ACR" >> "$GITHUB_ENV"
+          echo "ACR=$(az acr list -g "$RG" --query '[0].name' -o tsv)" >> "$GITHUB_ENV"
+          echo "APP=$(az containerapp list -g "$RG" --query '[0].name' -o tsv)" >> "$GITHUB_ENV"
 
       - name: Login no ACR
         run: az acr login --name "$ACR"
@@ -65,11 +52,10 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
-      - name: Release (fase 2)
+      - name: Release no Container App
         run: |
-          URL=$(az deployment group create --resource-group "$RG" --template-file infra/main.bicep \
-            --parameters environmentName="$ENVIRONMENT" speechSku="$SPEECH_SKU" languageSku="$LANGUAGE_SKU" minReplicas="$MIN_REPLICAS" \
-            containerImage="hospital-monitor:${{ github.sha }}" \
-            --query properties.outputs.appUrl.value --output tsv)
-          echo "App: $URL"
-          echo "### App publicado: $URL" >> "$GITHUB_STEP_SUMMARY"
+          az containerapp update -g "$RG" -n "$APP" --image "$ACR.azurecr.io/hospital-monitor:${{ github.sha }}"
+          az containerapp ingress update -g "$RG" -n "$APP" --target-port 8501
+          FQDN=$(az containerapp show -g "$RG" -n "$APP" --query properties.configuration.ingress.fqdn -o tsv)
+          echo "App: https://$FQDN"
+          echo "### App publicado: https://$FQDN" >> "$GITHUB_STEP_SUMMARY"
