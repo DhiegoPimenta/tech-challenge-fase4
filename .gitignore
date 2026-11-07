@@ -1,0 +1,16 @@
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.env
+.pytest_cache/
+.ruff_cache/
+models/
+*.pt
+*.onnx
+data/uploads/
+.vscode/
+.idea/
+# artefatos de deploy
+infra/*.local.json
+infra/.deploy-outputs.json

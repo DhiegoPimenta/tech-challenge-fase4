@@ -1,0 +1,32 @@
+name: Deploy Azure
+
+# Manual. Requer um service principal com federação OIDC (sem senha armazenada).
+# Secrets do repositório: AZURE_CLIENT_ID, AZURE_TENANT_ID, AZURE_SUBSCRIPTION_ID
+# Variáveis do repositório (opcionais): AZURE_RESOURCE_GROUP, AZURE_LOCATION
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: Nome do ambiente
+        default: dev
+
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    env:
+      RG: ${{ vars.AZURE_RESOURCE_GROUP || 'rg-hospital-monitor' }}
+      LOCATION: ${{ vars.AZURE_LOCATION || 'brazilsouth' }}
+      ENVIRONMENT: ${{ inputs.environment }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+      - name: Deploy (infra + build + release)
+        run: bash infra/deploy.sh "$RG" "$LOCATION" "$ENVIRONMENT"

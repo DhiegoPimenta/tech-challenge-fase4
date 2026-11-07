@@ -1,0 +1,14 @@
+# torch/torchvision (CPU) são instalados à parte no Dockerfile; localmente: pip install torch torchvision
+streamlit>=1.40,<2
+pandas>=2.1
+numpy>=1.26,<2.3
+scipy>=1.11
+scikit-learn>=1.4
+plotly>=5.20
+requests>=2.31
+python-dotenv>=1.0
+soundfile>=0.12.1
+azure-cognitiveservices-speech>=1.40
+azure-ai-textanalytics>=5.3.0
+opencv-python-headless>=4.9
+ultralytics>=8.3
