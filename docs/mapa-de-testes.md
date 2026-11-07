@@ -76,7 +76,7 @@ Na aba **Áudio**: enviar o arquivo → *Transcrever com Azure Speech* → ler o
 | U-1 | `consulta_sintomas_criticos.wav` | Confiança ~80–90%; análise "Fonte: **azure**"; sentimento **negativo**; termos críticos: dor no peito, falta de ar, tontura, cansado, fraco; 6 alertas | Confiança 86%; fonte azure; negativo; os 5 termos; 6 alertas |
 | U-2 | `consulta_normal.wav` | Sentimento positivo/neutro, **0 termos críticos**, 0 alertas | Confiança 75%; positivo; 0 alertas |
 | U-3 | `consulta_fala_lenta_pausas.wav` | Silêncio **81%**, pausa longa **8,8 s**, "Fala lenta (9 palavras/min)", termo "cansado", sentimento negativo; 4 alertas | Todos os itens acima; confiança 84%; 4 alertas |
-| U-4 | Trocar de áudio após U-1 | Confiança e palavras/min **do novo arquivo** (não os do anterior) | Defeito encontrado (valores antigos persistiam) → corrigido; reverificar |
+| U-4 | Trocar de áudio após U-1 | Confiança e palavras/min **do novo arquivo** (não os do anterior) | Defeito encontrado (valores antigos persistiam) → corrigido e reverificado: ao trocar o arquivo, confiança e palavras/min somem |
 | U-5 | Sem transcrever, clicar **Usar texto de exemplo** | Análise de texto roda sobre o exemplo; termos críticos listados | — |
 | U-6 | *...ou grave agora* (microfone) | Grava e analisa como os demais | — (exige microfone/permissão do navegador) |
 
