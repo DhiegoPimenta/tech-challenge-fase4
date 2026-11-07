@@ -63,3 +63,20 @@ def test_episode_grouping_merges_close_points():
     out = group_episodes(ev, pd.Timedelta(minutes=5))
     assert len(out) == 2
     assert out.loc[0, "severity"] == 3 and out.loc[0, "n_points"] == 3
+
+
+def test_episode_reasons_are_not_repeated():
+    from hospital_monitor.anomalies.episodes import group_episodes
+
+    ts = pd.to_datetime(["2025-01-01 10:00", "2025-01-01 10:01", "2025-01-01 10:02"])
+    ev = pd.DataFrame(
+        {
+            "timestamp": ts,
+            "signal": "hr",
+            "value": [1.0, 2.0, 3.0],
+            "severity": [3, 3, 2],
+            "reason": ["fora do limite; variação abrupta", "fora do limite", "variação abrupta; atípico"],
+        }
+    )
+    reasons = group_episodes(ev, pd.Timedelta(minutes=5)).loc[0, "reasons"].split("; ")
+    assert len(reasons) == len(set(reasons)) == 3

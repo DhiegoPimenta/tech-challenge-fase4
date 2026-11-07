@@ -33,7 +33,8 @@ def _summarize(name: str, rows: list[pd.Series]) -> dict:
     severity = max(int(r["severity"]) for r in rows)
     # valor de pico = primeira medição com a maior severidade do episódio
     worst = max(rows, key=lambda r: int(r["severity"]))
-    reasons = sorted({str(r["reason"]) for r in rows})
+    # cada ponto pode trazer várias razões já concatenadas ("a; b"): separa antes de deduplicar
+    reasons = sorted({part for r in rows for part in str(r["reason"]).split("; ")})
     return {
         "signal": name,
         "start": rows[0]["timestamp"],
