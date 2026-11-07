@@ -68,3 +68,34 @@ def test_vitals_clean_series_with_isolation_forest_stays_quiet():
     events = detect_vitals_anomalies(make_vitals(inject=False))
     assert len(events) <= 5
     assert not (events["severity"] == 3).any()
+
+
+def test_vitals_integer_steps_do_not_trigger_zscore():
+    # Dados reais (ex.: PhysioNet) vêm em inteiros: com MAD ~ 0, um degrau de 1 bpm não pode virar "variação abrupta".
+    n = 300
+    hr = [80] * n
+    for i in range(100, 200):
+        hr[i] = 81
+    df = pd.DataFrame(
+        {
+            "timestamp": pd.date_range("2025-01-01", periods=n, freq="s"),
+            "hr": hr,
+            "spo2": [97] * n,
+        }
+    )
+    assert detect_vitals_anomalies(df, use_isolation_forest=False).empty
+
+
+def test_vitals_large_step_still_triggers_zscore():
+    n = 300
+    hr = [80] * n
+    for i in range(150, 160):
+        hr[i] = 100  # +20 bpm, acima do delta clínico mínimo, mas dentro da regra clínica (<120)
+    df = pd.DataFrame(
+        {
+            "timestamp": pd.date_range("2025-01-01", periods=n, freq="s"),
+            "hr": hr,
+            "spo2": [97] * n,
+        }
+    )
+    assert not detect_vitals_anomalies(df, use_isolation_forest=False).empty

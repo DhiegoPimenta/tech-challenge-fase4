@@ -30,8 +30,8 @@ na tela Alertas.
 2. Em *Integrações Azure*: **Speech conectado**, **Language conectado**; *Webhook* conectado ou "não configurado".
 3. Clique em **Rodar demonstração de séries temporais**.
 
-**Esperado:** "13 alertas gerados" (6 de sinais vitais, 5 de prescrições, 2 de movimentação). Na barra lateral:
-8 críticos e 5 alertas.
+**Esperado:** "11 alertas gerados" (4 de sinais vitais, 5 de prescrições, 2 de movimentação). Na barra lateral:
+8 críticos e 3 alertas.
 
 ---
 
@@ -41,10 +41,10 @@ na tela Alertas.
 
 | Arquivo | Esperado |
 |---|---|
-| `vitais_normais.csv` | No máximo 2 episódios leves, **nenhum crítico** |
-| `vitais_com_anomalias.csv` | **6 episódios, 4 críticos**: pico de FC às 10:00, taquicardia 11:20–11:34, queda de SpO₂ 13:00–13:11, pico de PA 14:20–14:25 (+ 2 leves) |
+| `vitais_normais.csv` | **Nenhum episódio** (série limpa) |
+| `vitais_com_anomalias.csv` | **4 episódios, todos críticos**: pico de FC às 10:00, taquicardia 11:20–11:34, queda de SpO₂ 13:00–13:11, pico de PA 14:20–14:25 |
 | `invalido_sem_timestamp.csv` | Mensagem de erro amigável ("CSV inválido: faltam as colunas…"), sem traceback |
-| `physionet_bidmc_32.csv` (dado real do PhysioNet, só FC e SpO₂, 1 amostra/s) | **2 episódios**: SpO₂ crítica (481 medições, ~84%) e FC leve (45 medições, efeito de quantização descrito no relatório, seção 5.5) |
+| `physionet_bidmc_32.csv` (dado real do PhysioNet, só FC e SpO₂, 1 amostra/s) | **1 episódio**: SpO₂ crítica (481 medições, ~84%) |
 
 Outras verificações:
 - Troque o sinal do gráfico (FC, PA, SpO₂): pontos **vermelhos** (críticos) e **laranja** (alertas) sobre a linha.

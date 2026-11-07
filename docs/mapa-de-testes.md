@@ -43,7 +43,7 @@ foto vem de repositório AGPL; gere com `python scripts/make_test_video.py`. Par
 |---|---|---|---|
 | G-1 | Abrir a URL | Título "Monitor clínico multimodal" e diagrama do fluxo | OK |
 | G-2 | Ver "Integrações Azure" | Speech **conectado**, Language **conectado**, Webhook "não configurado" | OK |
-| G-3 | Clicar **Rodar demonstração de séries temporais** | "13 alertas gerados" (6 vitais + 5 prescrições + 2 movimento); barra lateral: 8 críticos e 5 alertas | OK (13 alertas; 8 críticos / 5 alertas) |
+| G-3 | Clicar **Rodar demonstração de séries temporais** | "11 alertas gerados" (4 vitais + 5 prescrições + 2 movimento); barra lateral: 8 críticos e 3 alertas | OK (11 alertas; 8 críticos / 3 alertas) |
 
 ### 1. Anomalias → Sinais vitais
 
@@ -51,8 +51,8 @@ Escolha **Enviar CSV** e envie o arquivo.
 
 | ID | Arquivo | Esperado | Observado |
 |---|---|---|---|
-| A-1 | `vitais_normais.csv` | ≤ 2 episódios leves, **0 críticos** | 2 episódios (SpO₂, leves) |
-| A-2 | `vitais_com_anomalias.csv` | **6 episódios, 4 críticos**: hr 10:00, hr 11:20–11:34, SpO₂ 13:00–13:11, PA 14:20–14:25, mais 2 leves | 6 episódios; 4 críticos; picos nos horários esperados |
+| A-1 | `vitais_normais.csv` | **0 episódios** (série limpa) | 0 episódios |
+| A-2 | `vitais_com_anomalias.csv` | **4 episódios, todos críticos**: hr 10:00, hr 11:20–11:34, SpO₂ 13:00–13:11, PA 14:20–14:25 | 4 episódios; 4 críticos; picos nos horários esperados |
 | A-3 | Gráfico → trocar o sinal (FC, PA, SpO₂) | Pontos vermelhos (crítico) e laranja (alerta) sobre a linha | OK (FC) |
 | A-4 | `invalido_sem_timestamp.csv` | Mensagem "CSV inválido: faltam as colunas ['timestamp']…", **sem traceback** | OK (após correção) |
 | A-5 | Abrir *Parâmetros de detecção* e subir o limiar do z-score para 8 | Menos episódios que A-2 | — |

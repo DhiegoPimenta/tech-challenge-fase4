@@ -27,6 +27,11 @@ VITAL_LIMITS: dict[str, dict] = {
     "spo2": {"label": "Saturação de O2 (%)", "warn": (94, 101), "crit": (90, 101)},
 }
 
+# Variação mínima (na unidade do sinal) para um desvio estatístico virar alerta. Sinais reais são
+# inteiros e, em séries muito estáveis, o MAD é quase zero: sem este piso, um passo de 1 bpm ou 1 %
+# de SpO2 vira "variação abrupta" (falso positivo observado em dados do PhysioNet).
+MIN_CLINICAL_DELTA: dict[str, float] = {"hr": 8.0, "sbp": 15.0, "dbp": 10.0, "spo2": 3.0}
+
 EVENT_COLUMNS = ["timestamp", "signal", "value", "severity", "method", "reason"]
 
 
@@ -63,8 +68,11 @@ def rule_based_events(df: pd.DataFrame, signals: list[str]) -> pd.DataFrame:
     return pd.concat(frames, ignore_index=True) if frames else _empty()
 
 
-def rolling_robust_z(series: pd.Series, window: int) -> pd.Series:
-    """Z-score robusto (0.6745 * (x - mediana) / MAD) em janela móvel."""
+def rolling_robust_z(series: pd.Series, window: int, min_delta: float = 0.0) -> pd.Series:
+    """Z-score robusto (0.6745 * (x - mediana) / MAD) em janela móvel.
+
+    ``min_delta``: desvios absolutos menores que isso (em relação à mediana móvel) têm z = 0.
+    """
     minp = max(5, window // 3)
     med = series.rolling(window, min_periods=minp).median()
     mad = (series - med).abs().rolling(window, min_periods=minp).median()
@@ -73,13 +81,16 @@ def rolling_robust_z(series: pd.Series, window: int) -> pd.Series:
     global_mad = float((series - series.median()).abs().median())
     floor = max(0.5 * global_mad, float(series.std(ddof=0)) * 0.1, 1e-6)
     mad = mad.where(mad > floor, floor)
-    return 0.6745 * (series - med) / mad
+    z = 0.6745 * (series - med) / mad
+    if min_delta > 0:
+        z = z.where((series - med).abs() >= min_delta, 0.0)
+    return z
 
 
 def zscore_events(df: pd.DataFrame, signals: list[str], window: int, threshold: float) -> pd.DataFrame:
     frames = []
     for s in signals:
-        z = rolling_robust_z(df[s].astype(float), window)
+        z = rolling_robust_z(df[s].astype(float), window, MIN_CLINICAL_DELTA.get(s, 0.0))
         mask = z.abs() > threshold
         sub = df.loc[mask.fillna(False), ["timestamp", s]]
         if sub.empty:
@@ -124,7 +135,11 @@ def isolation_forest_events(
     # Para evitar alarmes em série normal, só vale o ponto que também se desvia do padrão
     # recente (z-score robusto) em algum sinal.
     zmax = pd.concat(
-        [rolling_robust_z(df[s].astype(float), z_window).abs() for s in signals], axis=1
+        [
+            rolling_robust_z(df[s].astype(float), z_window, MIN_CLINICAL_DELTA.get(s, 0.0)).abs()
+            for s in signals
+        ],
+        axis=1,
     ).max(axis=1)
     outlier = outlier & (zmax.fillna(0) > z_min).to_numpy()
     if not outlier.any():

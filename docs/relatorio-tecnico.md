@@ -84,11 +84,11 @@ séries sem anomalia geram poucos alertas.
 
 | Métrica | Valor |
 |---|---|
-| Episódios de sinais vitais com anomalias | 6, sendo 4 críticos exatamente nos horários injetados (FC 10:00, FC 11:20–11:34, SpO₂ 13:00–13:11, PA 14:20–14:25) e 2 leves |
-| Episódios na série limpa (`vitais_normais.csv`) | 2, ambos leves (SpO₂); nenhum crítico |
+| Episódios de sinais vitais com anomalias | 4, todos críticos e exatamente nos horários injetados (FC 10:00, FC 11:20–11:34, SpO₂ 13:00–13:11, PA 14:20–14:25) |
+| Episódios na série limpa (`vitais_normais.csv`) | 0 |
 | Alertas de prescrição | 5 (dipirona: dobra e excesso do máximo, e ×1,5; tramadol ×4; interação varfarina + ibuprofeno). A prescrição estável (enalapril) não alertou |
 | Eventos de movimentação | 2 (imobilidade diurna de 13:00 a 16:45, alerta; queda suspeita às 10:00 do dia 2, crítico). Série normal: 0 eventos |
-| Demonstração completa (botão da Visão geral) | 13 alertas: 6 de sinais vitais, 5 de prescrições e 2 de movimentação (8 críticos e 5 alertas) |
+| Demonstração completa (botão da Visão geral) | 11 alertas: 4 de sinais vitais, 5 de prescrições e 2 de movimentação (8 críticos e 3 alertas) |
 
 A taxa de falsos positivos caiu depois de dois ajustes: piso do MAD no z-score robusto e confirmação do
 Isolation Forest por z-score local (>2,5). Antes disso a série limpa gerava 18 alertas.
@@ -121,7 +121,7 @@ paciente real. O microfone foi exercitado só com sinal simulado no navegador (f
 
 ### 5.4 Exemplos de alertas gerados
 
-A central da aba *Alertas* consolidou, na demonstração, 13 alertas de séries temporais (8 críticos, 5 alertas),
+A central da aba *Alertas* consolidou, na demonstração, 11 alertas de séries temporais (8 críticos, 3 alertas),
 e depois somou os de áudio e vídeo. Todos foram enviados ao webhook de teste em um único POST
 (`{"text": ..., "alerts": [...]}`), confirmado nos logs do receptor. Exemplos:
 
@@ -164,27 +164,28 @@ precisão e revocação. O script usa FC e SpO₂ (não há pressão arterial), 
 |---|---|
 | Registros com episódio **crítico** | 4: SpO₂ de 83% (reg. 32), 84% (reg. 49) e 88% (reg. 22), e FC de até 139 bpm (reg. 25) |
 | Registros com SpO₂ < 90% ou FC > 130 bpm (limiares críticos) | os mesmos 4: nenhum caso crítico foi perdido e nenhum foi inventado |
-| Registros sem nenhum episódio | 1 |
-| Episódios por registro | média 10,2 (máximo 34) |
-| Pontos marcados | 9.222 (36,4%) |
+| Registros sem nenhum episódio | 22 |
+| Episódios por registro | média 1,9 (máximo 14) |
+| Pontos marcados | 6.312 (24,9%) |
 
 **Leitura honesta do resultado:**
 
 * Os críticos são clinicamente plausíveis, mas isso é em grande parte a regra de limiar clínico, não aprendizado.
-* A taxa de pontos marcados é **alta**: em dados reais o sistema gera muitos alertas leves. Do total de pontos
-  marcados, cerca de 5,9 mil vêm só da regra clínica (por exemplo, SpO₂ estável em 93% fica abaixo da referência
-  de 94% e é marcada em todos os segundos) e cerca de 2,8 mil só do z-score robusto.
-* O z-score dispara por **quantização**: FC e SpO₂ reais são inteiros e, em séries muito estáveis, o MAD é quase
-  zero; um passo de 1 bpm ou 1% vira "variação abrupta". Nas séries sintéticas (com ruído contínuo) isso não aparecia.
-* Correção candidata (medida, **não aplicada**, para manter o app publicado e o vídeo coerentes): exigir uma variação
-  mínima clínica em relação à mediana móvel (FC 8 bpm, PAS 15, PAD 10, SpO₂ 3 pontos) antes de contar o z-score.
-  Nos mesmos dados: pontos marcados caem de 36,4% para 24,9%, episódios por registro de 10,2 para 1,9 e registros
-  sem episódio de 1 para 22; os 4 críticos continuam. Nas séries sintéticas, os 4 críticos injetados continuam
-  detectados e os 2 episódios leves de falso positivo somem (6 para 4 episódios; série limpa de 2 para 0).
+* Os 24,9% de pontos marcados ainda são **muitos**, mas quase tudo vem da regra clínica: dos 6.312 pontos, 6.138
+  são só da regra de limiar (por exemplo, SpO₂ estável em 93% fica abaixo da referência de 94% e é marcada em todos
+  os segundos) e apenas 74 só do z-score robusto. O limiar da regra é ilustrativo e deveria ser ajustado por um
+  clínico.
+* **Correção aplicada após a primeira rodada.** Na primeira versão, o z-score disparava por **quantização**: FC e
+  SpO₂ reais são inteiros e, em séries muito estáveis, o MAD é quase zero, então um passo de 1 bpm ou 1% virava
+  "variação abrupta" (36,4% dos pontos marcados e 10,2 episódios por registro). Passamos a exigir uma variação mínima
+  clínica em relação à mediana móvel (FC 8 bpm, PAS 15, PAD 10, SpO₂ 3 pontos) antes de contar o z-score, também no
+  gate de corroboração do Isolation Forest. Resultado nos mesmos 53 registros: pontos marcados 36,4% para 24,9%,
+  episódios por registro de 10,2 para 1,9 e registros sem episódio de 1 para 22; os 4 críticos continuam. Nas séries
+  sintéticas os 4 críticos injetados continuam detectados e os 2 episódios leves de falso positivo sumiram (6 para 4
+  episódios; série limpa de 2 para 0). O ajuste tem testes automáticos (`tests/test_anomalies.py`).
 
 O registro 32 (SpO₂ ~84% o tempo todo) está em `tests/manual/physionet_bidmc_32.csv` para subir na aba
-*Anomalias → Sinais vitais*: o app mostra 2 episódios, SpO₂ crítica (481 medições) e FC leve (45 medições, o
-efeito de quantização descrito acima).
+*Anomalias → Sinais vitais*: o app mostra 1 episódio, SpO₂ crítica (481 medições, ~84%).
 
 Fonte dos dados: Pimentel et al., *BIDMC PPG and Respiration Dataset* (PhysioNet), licença Open Data Commons
 Attribution v1.0. Goldberger et al., *PhysioBank, PhysioToolkit, and PhysioNet*, Circulation 2000.
@@ -192,7 +193,7 @@ Attribution v1.0. Goldberger et al., *PhysioBank, PhysioToolkit, and PhysioNet*,
 ## 6. Limitações e trabalhos futuros
 
 * Limiares clínicos/dose/interações ilustrativos — validar com especialistas e bases oficiais.
-* Sem avaliação quantitativa em dados rotulados reais (precisão/revocação); recomenda-se anotar um conjunto de validação. Em dados reais do PhysioNet (seção 5.5) o sistema gera muitos alertas leves por quantização; a correção candidata está descrita lá.
+* Sem avaliação quantitativa em dados rotulados reais (precisão/revocação); recomenda-se anotar um conjunto de validação. Em dados reais do PhysioNet (seção 5.5) o sistema ainda marca muitos pontos (24,9%) por causa do limiar clínico de SpO₂; a correção do z-score por quantização já foi aplicada e está descrita lá.
 * **Tempo real:** a análise é feita sob demanda sobre arquivos enviados (vídeo, áudio e CSV); o envio do alerta ao webhook é automático após a análise, mas não há ingestão contínua. O fluxo em tempo real (RTSP, Event Hubs ou Azure Stream Analytics) é trabalho futuro.
 * Correlacionar modalidades por janela de tempo (fusão intermediária) e personalizar limiares por paciente.
 * Persistência de alertas (Cosmos DB / Table Storage), autenticação (Entra ID) e rede privada para uso real (LGPD).
