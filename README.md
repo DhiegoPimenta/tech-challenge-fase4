@@ -1,24 +1,19 @@
 # Monitor Clínico Multimodal — Tech Challenge Fase 4 (IADT)
 
+
+### ▶️ [Assistir ao vídeo de demonstração](https://youtu.be/ECQEFq01__g) · 🌐 [Abrir a aplicação no Azure](https://ca-hospmon-dev.graymushroom-60baf176.eastus2.azurecontainerapps.io/) · 💻 [Repositório](https://github.com/DhiegoPimenta/tech-challenge-fase4)
+
+> A aplicação roda em uma assinatura de teste do Azure e escala a zero quando fica parada: o primeiro acesso
+> pode levar de 10 a 60 segundos. O ambiente pode ser desligado após a avaliação; nesse caso, use o vídeo ou
+> reproduza com o [passo a passo de deploy](docs/deploy-azure.md). Para testar, use os arquivos de
+> [`tests/manual/`](tests/manual) seguindo o [guia de teste](docs/guia-de-teste.md).
+
 Aplicação **Streamlit** que funde **vídeo, áudio e texto/séries temporais** para identificar sinais
 precoces de risco em pacientes e alertar a equipe médica. Roda localmente, em Docker e no
 **Azure Container Apps**, com infraestrutura como código em **Bicep**.
 
 > Projeto acadêmico. Os alertas são heurísticas/modelos de apoio à decisão e **não substituem avaliação clínica**.
 > Todos os dados usados nas demonstrações são sintéticos ou públicos; não há dados reais de pacientes.
-
-## Links
-
-| | |
-|---|---|
-| **Vídeo de demonstração** | <https://youtu.be/ECQEFq01__g> |
-| **Aplicação publicada (Azure Container Apps)** | <https://ca-hospmon-dev.graymushroom-60baf176.eastus2.azurecontainerapps.io/> |
-| **Repositório** | <https://github.com/DhiegoPimenta/tech-challenge-fase4> |
-
-> A aplicação roda em uma assinatura de teste do Azure e escala a zero quando fica parada: o primeiro acesso
-> pode levar de 10 a 60 segundos. O ambiente pode ser desligado após a avaliação; nesse caso, use o vídeo ou
-> reproduza com o [passo a passo de deploy](docs/deploy-azure.md). Para testar, use os arquivos de
-> [`tests/manual/`](tests/manual) seguindo o [guia de teste](docs/guia-de-teste.md).
 
 ## O que o sistema faz
 
