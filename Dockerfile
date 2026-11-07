@@ -6,9 +6,10 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONPATH=/app/src \
     MODELS_DIR=/app/models
 
-# libsndfile: leitura de áudio | libasound2/libssl3: Azure Speech SDK | libglib2.0-0: OpenCV
+# libsndfile: leitura de áudio | libasound2/libssl3: Azure Speech SDK
+# libglib2.0-0/libxcb1/libgl1: o wheel do OpenCV os carrega no import, mesmo na versão headless
 RUN apt-get update \
- && apt-get install -y --no-install-recommends libsndfile1 libasound2 libssl3 libglib2.0-0 ca-certificates \
+ && apt-get install -y --no-install-recommends libsndfile1 libasound2 libssl3 libglib2.0-0 libxcb1 libgl1 ca-certificates \
  && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
