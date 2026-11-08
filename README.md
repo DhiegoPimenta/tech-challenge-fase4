@@ -125,6 +125,7 @@ No Azure, as chaves são injetadas como *secrets* do Container App pelo Bicep (n
 ## Limitações conhecidas
 
 * Em vez do OpenPose original (Caffe, pesado de empacotar) usamos **YOLOv8-pose**, que entrega os mesmos 17 keypoints COCO. Justificativa em [docs/arquitetura.md](docs/arquitetura.md#decisões-técnicas).
+* **Tempo real:** a análise roda sob demanda sobre arquivos enviados (vídeo, áudio, CSV), e o envio do alerta ao webhook é automático após a análise. Não há ingestão contínua de streams; isso (RTSP, Event Hubs ou Stream Analytics) é trabalho futuro, descrito no [relatório, seção 6](docs/relatorio-tecnico.md).
 * Limiares clínicos, tabela de doses e de interações são **ilustrativos** e precisam de validação clínica.
 * Indicadores vocais são heurísticos (sem modelo treinado em voz patológica).
 * O estado dos alertas vive na sessão do Streamlit; para histórico persistente, ligar a um banco (Cosmos DB/Table Storage).

@@ -84,3 +84,7 @@ Arquivo único: [`infra/main.bicep`](../infra/main.bicep). Pontos de design:
 * Imagem roda como usuário não-root.
 * Uploads são gravados em arquivo temporário e removidos após o uso; nada é persistido.
 * Dados de demonstração são sintéticos. Para dados reais seria necessário: LGPD (base legal, minimização, anonimização), rede privada (Private Endpoints), autenticação (Entra ID/Easy Auth) e trilha de auditoria.
+
+## Tempo real
+
+O pipeline é executado sob demanda: cada análise (vídeo, áudio ou série temporal) processa o arquivo enviado e, ao terminar, os alertas vão para a central e, se configurado, para o webhook. Não há ingestão contínua de streams. Para monitoramento contínuo, a evolução natural é alimentar os mesmos detectores por RTSP (vídeo), Event Hubs (sinais vitais) ou Azure Stream Analytics.
