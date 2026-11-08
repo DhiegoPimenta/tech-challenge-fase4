@@ -105,7 +105,7 @@ Na aba **Áudio**: enviar o arquivo → *Transcrever com Azure Speech* → ler o
 | L-2 | Filtro "Mostrar a partir de" = CRÍTICO | Só os críticos | OK (8 linhas) |
 | L-3 | Preencher paciente e observações → **Baixar relatório (Markdown)** | Relatório com resumo e tabelas por fonte (visto na **Pré-visualização** da tela, que usa o mesmo texto do download; o clique em *Baixar* não foi exercitado para não gravar arquivo na máquina) | OK (pré-visualização) |
 | L-4 | **Limpar alertas** | Contadores zeram e aparece "Nenhum alerta ainda" | OK |
-| L-5 | `ALERT_WEBHOOK_URL` configurado + **Enviar alertas** | "N alerta(s) enviados" e a mensagem chega ao destino | OK: receptor de teste no próprio Azure (`infra/test/webhook-sink.bicep`) registrou o POST com os **11 alertas** e o payload completo; a interface mostrou "11 alerta(s) enviados" |
+| L-5 | `ALERT_WEBHOOK_URL` configurado + **Enviar alertas** | Toast "Webhook confirmou o recebimento de N alerta(s)", mensagem "N alerta(s) enviados" e a mensagem chega ao destino | OK: receptor de teste no próprio Azure (`infra/test/webhook-sink.bicep`) registrou o POST com os **11 alertas** e o payload completo; a interface mostrou "11 alerta(s) enviados" |
 
 ### 7. Infraestrutura
 

@@ -29,6 +29,8 @@ def render(settings, center):
         if st.button("📨 Enviar alertas (ALERTA e acima) ao webhook", type="primary"):
             try:
                 n = center.dispatch_webhook(settings.alert_webhook_url)
+                if n:
+                    st.toast(f"Webhook confirmou o recebimento de {n} alerta(s).", icon="✅")
                 st.success(f"{n} alerta(s) enviados.")
             except Exception as exc:  # noqa: BLE001
                 st.error(f"Falha ao enviar: {exc}")

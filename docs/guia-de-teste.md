@@ -121,7 +121,7 @@ Observações:
 2. Filtro *Mostrar a partir de* = CRÍTICO: só os críticos aparecem.
 3. Preencha **paciente** e **observações**, abra *Pré-visualizar relatório* e clique em **Baixar relatório (Markdown)**.
    O relatório traz resumo e uma tabela por fonte.
-4. **Enviar alertas ao webhook** (só aparece com `ALERT_WEBHOOK_URL` configurado): mostra "N alerta(s) enviados".
+4. **Enviar alertas ao webhook** (só aparece com `ALERT_WEBHOOK_URL` configurado): mostra um aviso (toast) "Webhook confirmou o recebimento de N alerta(s)" no canto da tela e a mensagem "N alerta(s) enviados".
    Para ver a mensagem chegando:
    ```bash
    az containerapp logs show -g rg-hospital-monitor -n ca-webhook-sink --type console --tail 20 --format text
