@@ -7,6 +7,11 @@
 > pode levar de 10 a 60 segundos. O ambiente pode ser desligado após a avaliação; nesse caso, use o vídeo ou
 > reproduza com o [passo a passo de deploy](docs/deploy-azure.md). Para testar, use os arquivos de
 > [`tests/manual/`](tests/manual) seguindo o [guia de teste](docs/guia-de-teste.md).
+>
+> **Sobre o vídeo:** ele foi gravado antes de um ajuste final no z-score de sinais vitais (que eliminou falsos positivos
+> em dados reais, ver [relatório, seção 5.5](docs/relatorio-tecnico.md)). Por isso o vídeo mostra 13 alertas e 6 episódios
+> de sinais vitais na demonstração; a versão atual do código e do app publicado mostra **11 alertas e 4 episódios**
+> (os 4 críticos são os mesmos). A prova de que o webhook chegou ao receptor está na seção 5.4 do relatório.
 
 Aplicação **Streamlit** que funde **vídeo, áudio e texto/séries temporais** para identificar sinais
 precoces de risco em pacientes e alertar a equipe médica. Roda localmente, em Docker e no
